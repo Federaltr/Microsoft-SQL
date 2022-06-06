@@ -233,6 +233,94 @@ SELECT UPPER(LEFT('character', 1)) + LOWER(SUBSTRING('character', 2, LEN('cahara
 
 SELECT CONCAT (UPPER(LEFT('character', 1)), LOWER(SUBSTRING('character', 2, LEN('character'))))
 
+----
+
+--TRIM Function
+--TRIM, LTRIM, RTRIM
+
+SELECT TRIM('  CHARACTER  ')
+
+SELECT LTRIM('  CHARACTER  ')
+
+SELECT RTRIM('  CHARACTER  ')
+
+SELECT TRIM( ' CHAR ACTER ')
+
+SELECT TRIM('ABC' FROM 'CCCCBBBAAAFRHGKDFKSLDFJKSDFACBBCACABACABCA')  --baþka bir özelliði de verilen string içerisinden istenen bir deðeri kaldýrabiliyor.
+																	  --birden fazla deðer varsa bu örnekteki gibi deðerlerin sýrasýna bakmadan soldan ve saðdan deðerleri temizliyor.
+
+SELECT TRIM('X' FROM 'ABCXXDE')   --Ama tek deðer varsa saðdan ve soldan bu deðere bakýyor. Yoksa text aynen kalýyor.
+
+----
+
+--REPLACE And STR Function
+
+--REPLACE
+
+SELECT REPLACE('CHAR ACT ER STRING', ' ', '/')  --boþluk yerine / koyar.
+
+SELECT REPLACE('CHARACTER STRING', 'CHARACTER STRING', 'CHARACTER')
+
+--STR  (default olarak 10 karakter çýktý veriyor.)
+
+SELECT STR (5454)
+
+SELECT STR (2135454654)
+
+SELECT STR (133215.654645, 11, 3)  --11 karakter al virgülden sonra 3 basamak olsun.
+
+SELECT STR (1234567890123456)  --default 10 olduðu için çýktý vermedi.
+
+----
+
+--CAST,CONVERT, ROUND, ISNULL Function 
+
+--CAST
+
+SELECT CAST (12345 AS CHAR) 
+
+SELECT CAST (123.65 AS INT)
+
+--CONVERT
+
+SELECT CONVERT(int, 30.60)
+
+SELECT CONVERT(VARCHAR(10), '2020-10-10')
+
+SELECT CONVERT(DATETIME, '2020-10-10' )
+
+SELECT CONVERT(NVARCHAR, GETDATE(), 112 )  --112 deðeri için bak(https://docs.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16)
+
+SELECT CAST('20201010' AS DATE)
+
+SELECT CONVERT(NVARCHAR, CAST ('20201010' AS DATE), 103 )
+
+--COALESCE,
+
+SELECT NULLIF(10,10)
+
+SELECT NULLIF(10,19)
+
+--ROUND
+
+SELECT ROUND(432.368, 2, 0)
+SELECT ROUND(432.368, 2, 1)
+SELECT ROUND(432.368, 2)  --Default 0
+
+--ISNULL
+
+SELECT ISNULL(NULL, 'ABC')
+
+SELECT ISNULL('', 'ABC')
+
+--ISNUMERIC
+
+SELECT ISNUMERIC(123)  --parantez içi numeric ise 1 yani TRUE deðilse 0 döndürür.
+
+SELECT ISNUMERIC('a123')
+
+
+
 
 
 
