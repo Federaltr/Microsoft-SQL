@@ -30,6 +30,12 @@
   ON A.product_id = B.product_id
   WHERE (store_id = 2) AND (quantity > 25)
   ORDER BY quantity DESC;
+
+  /* other solution*/
+
+  SELECT store_id, product_name, list_price, quantity
+  FROM product.product as a, product.stock as b
+  WHERE a.product_id=b.product_id and store_id=2 and quantity>25
   
 ---- 5. Find the sales order of the customers who lives in Boulder order by order date----
 
@@ -44,21 +50,52 @@
 
   SELECT  A.staff_id, DATEPART(YEAR, A.order_date) AS order_year, COUNT(B.quantity) AS avg_quantity
   FROM sale.orders A
-  LEFT JOIN sale.order_item B
+  INNER JOIN sale.order_item B
   ON A.order_id = B.order_id
   GROUP BY A.staff_id, DATEPART(YEAR, A.order_date)
   ORDER BY A.staff_id, DATEPART(YEAR, A.order_date)
 
+  SELECT top 5 *
+  FROM sale.order_item
+
+  SELECT top 5 *
+  FROM sale.orders
+
+  SELECT A.staff_id, DATEPART(YEAR, A.order_date) AS order_year,ROUND(AVG(B.quantity*B.list_price*(1-B.discount)),2,1) AS avg_quantity
+  FROM sale.orders A
+  INNER JOIN sale.order_item B
+  ON A.order_id = B.order_id
+  GROUP BY A.staff_id, DATEPART(YEAR, A.order_date)
+  ORDER BY A.staff_id, DATEPART(YEAR, A.order_date)
+
+  
+  SELECT A.staff_id, DATEPART(YEAR, A.order_date)
+  FROM sale.orders A
+  INNER JOIN sale.order_item B
+  ON A.order_id = B.order_id
+  WHERE A.staff_id = 2 AND DATEPART(YEAR, A.order_date) = 2018
+  
+
 ---- 7. What is the sales quantity of product according to the brands and sort them highest-lowest----
 
-  SELECT b.brand_name, COUNT(c.quantity) as brand_quantity
+  SELECT b.brand_name, SUM(c.quantity) AS brand_quantity
   FROM product.product A
-  LEFT JOIN product.brand B
+  INNER JOIN product.brand B
   ON A.brand_id = B.brand_id
-  LEFT JOIN sale.order_item C
+  INNER JOIN sale.order_item C
   ON A.product_id = c.product_id
   GROUP BY B.brand_name
-  ORDER BY COUNT(c.quantity) DESC
+  ORDER BY SUM(c.quantity) DESC
+
+   SELECT top 5 *
+  FROM product.product
+
+  SELECT top 5 *
+  FROM product.brand
+
+  SELECT top 5 *
+  FROM sale.order_item
+
 
 ---- 8. What are the categories that each brand has?----
 
@@ -71,17 +108,62 @@
   GROUP BY brand_name, category_name
   ORDER BY brand_name
 
+  SELECT B.brand_name, C.category_name
+  FROM product.product A
+  JOIN product.brand B
+  ON A.brand_id = B.brand_id
+  JOIN product.category C
+  ON A.category_id = C.category_id
+  GROUP BY brand_name, category_name
+  ORDER BY brand_name DESC
+
+
+   SELECT top 5 *
+  FROM product.category
+
+  SELECT top 5 *
+  FROM product.brand
+
+  SELECT top 5 *
+  FROM product.product
+
+
 ---- 9. Select the avg prices according to brands and categories----
 
-  	 
+select PB.brand_name, PC.category_name, AVG(PP.list_price) AS avg_list_price
+from product.product PP
+inner join product.brand PB
+on PP.brand_id=PB.brand_id
+inner join product.category PC
+on PP.category_id=PC.category_id
+group by  PC.category_name, PB.brand_name
+
+   SELECT top 5 *
+  FROM product.category
+
+  SELECT top 5 *
+  FROM product.brand
+
+  SELECT top 5 *
+  FROM product.product
+
+  SELECT B.brand_name, C.category_name, SUM(A.list_price) / COUNT(B.brand_name)
+  FROM product.product A
+  JOIN product.brand B
+  ON A.brand_id = B.brand_id
+  JOIN product.category C
+  ON A.category_id = C.category_id
+  WHERE B.brand_name = 'Acer' AND C.category_name = 'Computer Accessories'
+  GROUP BY B.brand_name, C.category_name
+
 
 ---- 10. Select the annual amount of product produced according to brands----
 
   SELECT A.model_year, B.brand_name, SUM(c.quantity) AS year_quantity
   FROM product.product A
-  LEFT JOIN product.brand B
+  INNER JOIN product.brand B
   ON A.brand_id = B. brand_id
-  LEFT JOIN product.stock C
+  INNER JOIN product.stock C
   ON A.product_id = C.product_id
   GROUP BY model_year, brand_name
   ORDER BY model_year DESC 
