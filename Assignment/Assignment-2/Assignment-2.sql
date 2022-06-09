@@ -13,14 +13,10 @@ purchased the product named '2TB Red 5400 rpm SATA III 3.5 Internal NAS HDD' buy
 */
 
 
-SELECT product_id, product_name
-FROM product.product
-WHERE product_name IN ('Polk Audio - 50 W Woofer - Black', 'SB-2000 12 500W Subwoofer (Piano Gloss Black)', 'Virtually Invisible 891 In-Wall Speakers (Pair)')
 
-
-
-SELECT d.customer_id, d.first_name, d.last_name,
+SELECT DISTINCT d.customer_id, d.first_name, d.last_name,  
 	   a.product_name
+INTO #main_table
 FROM product.product a
 JOIN sale.order_item b
 ON a.product_id = b.product_id
@@ -28,55 +24,67 @@ JOIN sale.orders c
 ON b.order_id = c.order_id
 JOIN sale.customer d
 ON c.customer_id = d.customer_id
-GROUP BY d.customer_id, d.first_name, d.last_name, a.product_name 
+--GROUP BY d.customer_id, d.first_name, d.last_name, a.product_name 
 ;
 
-
-CREATE VIEW name_customer_3 AS
-SELECT d.customer_id, d.first_name, d.last_name,
-	   a.product_name, a.product_id
-FROM product.product a
-JOIN sale.order_item b
-ON a.product_id = b.product_id
-JOIN sale.orders c
-ON b.order_id = c.order_id
-JOIN sale.customer d
-ON c.customer_id = d.customer_id
-WHERE product_name = '2TB Red 5400 rpm SATA III 3.5 Internal NAS HDD'  --product_id = 6
-GROUP BY d.customer_id, d.first_name, d.last_name, a.product_name, a.product_id
-;
-
-
-SELECT *
-FROM dbo.name_customer_3
+SELECT * FROM #main_table    -- Tüm ürünleri içeren customer tablosu.
 
 ---
 
-SELECT *
-FROM
-			(
-			SELECT customer_id, first_name, last_name, product_id
-			FROM dbo.name_customer_3
-			) A
-PIVOT
-(
-	count(customer_id)
-	FOR product_id IN
-	(
-	[13], [16], [21]
-	)
-) AS PIVOT_TABLE
-;
+SELECT DISTINCT * 
+INTO #hdd_table
+FROM #main_table
+WHERE product_name = '2TB Red 5400 rpm SATA III 3.5 Internal NAS HDD'
 
+SELECT * FROM #hdd_table  --'2TB Red 5400 rpm SATA III 3.5 Internal NAS HDD' bu ürünü alanlarýn tablosu.
 
+---
 
+SELECT DISTINCT *
+INTO #woofer_table
+FROM #main_table
+WHERE product_name = 'Polk Audio - 50 W Woofer - Black'  
 
+SELECT * FROM #woofer_table  -- istenen (first_product) tablosu
 
+---
 
+SELECT DISTINCT *
+INTO #subwoofer_table
+FROM #main_table
+WHERE product_name = 'SB-2000 12 500W Subwoofer (Piano Gloss Black)'
 
+SELECT * FROM #subwoofer_table  -- istenen (second_product) tablosu
 
+---
 
+SELECT DISTINCT *
+INTO #speakers_table
+FROM #main_table
+WHERE product_name = 'Virtually Invisible 891 In-Wall Speakers (Pair)' 
 
+SELECT * FROM #speakers_table  -- istenen (third_product) tablosu
 
+---
 
+SELECT HT.*, WT.product_name first_product, 
+             ST.product_name second_product, 
+			 SPT.product_name third_product
+INTO #last_tablee
+FROM #hdd_table HT
+LEFT JOIN #woofer_table WT
+ON HT.customer_id = WT.customer_id
+LEFT JOIN #subwoofer_table ST
+ON HT.customer_id = ST.customer_id
+LEFT JOIN #speakers_table SPT
+ON HT.customer_id = SPT.customer_id
 
+SELECT * FROM #last_tablee
+
+---
+
+SELECT customer_id, first_name, last_name,
+	  REPLACE(ISNULL(first_product, 'No'), 'Polk Audio - 50 W Woofer - Black', 'Yes') First_product,
+	  REPLACE(ISNULL(second_product, 'No'), 'SB-2000 12 500W Subwoofer (Piano Gloss Black)', 'Yes') Second_product,
+	  REPLACE(ISNULL(third_product, 'No'), 'Virtually Invisible 891 In-Wall Speakers (Pair)', 'Yes') Third_product
+FROM #last_tablee

@@ -76,22 +76,26 @@ FROM #last_table
 
 SELECT *
 FROM 
-
 			(
-			SELECT customer_id, first_name, last_name, product_name
-			FROM #main_table
-			where product_name = '2TB Red 5400 rpm SATA III 3.5 Internal NAS HDD'
+			SELECT *
+			FROM #main_table     
+			WHERE product_name = '2TB Red 5400 rpm SATA III 3.5 Internal NAS HDD' 
 			) A
-
 
 PIVOT
 (
-	customer_id
+	COUNT(customer_id)
 	FOR product_name IN
 	(
-	['Polk Audio - 50 W Woofer - Black'], ['SB-2000 12 500W Subwoofer (Piano Gloss Black)'], ['Virtually Invisible 891 In-Wall Speakers (Pair)']
+	['Polk Audio - 50 W Woofer - Black'], 
+	['SB-2000 12 500W Subwoofer (Piano Gloss Black)'], 
+	['Virtually Invisible 891 In-Wall Speakers (Pair)']
 	)
 ) AS PIVOT_TABLE
+
+
+
+
 
 --1. 'Polk Audio - 50 W Woofer - Black' -- (first_product)
 --2. 'SB-2000 12 500W Subwoofer (Piano Gloss Black)' -- (second_product)
