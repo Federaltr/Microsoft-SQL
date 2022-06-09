@@ -234,6 +234,7 @@ PIVOT
 	[2018], [2019], [2020], [2021]
 	)
 ) AS PIVOT_TABLE
+
 UNION ALL           --union ve select ile yukardaki sorguya roll updaki gibi toplam deðerleri ekledik.
 SELECT NULL, *      --category_id null diðer sütunlarýn toplamý geldi.
 FROM
