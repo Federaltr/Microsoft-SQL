@@ -89,8 +89,8 @@ SELECT b.brand_name, AVG(a.list_price) AS avg_price
 FROM product.product a, product.brand b 
 WHERE a.brand_id = b.brand_id 
 	  AND a.model_year > 2016 
-GROUP BY b.brand_name
-HAVING AVG(a.list_price) > 1000  --HAVING alias kabul etmiyor fakat
+GROUP BY b.brand_name            --GROUP BY alias kabul etmiyor 
+HAVING AVG(a.list_price) > 1000  --HAVING alias kabul etmiyor       --SEBEBÝ KOMUTLARIN SIRASINDAN ÖTÜRÜ
 ORDER BY avg_price       --ORDER BY alias kabul ediyor.
 ;
 

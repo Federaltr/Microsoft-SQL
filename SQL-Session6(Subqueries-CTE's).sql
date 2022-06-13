@@ -146,7 +146,7 @@ AND B.category_name NOT IN ('Game', 'GPS', 'Home Theater')
 -- Model yýlý 2020 olan ve Receivers Amplifiers kategorisindeki en pahalý üründen daha pahalý ürünleri listeleyin.
 -- Ürün adý, model_yýlý ve fiyat bilgilerini yüksek fiyattan düþük fiyata doðru sýralayýnýz.
 
-SELECT TOP 1 *
+SELECT TOP 1 *  
 FROM product.product A, product.category B
 WHERE A.category_id = B.category_id 
 	  AND B.category_name = 'Receivers Amplifiers' 
@@ -155,7 +155,7 @@ ORDER BY A.list_price DESC
 SELECT product_name, model_year, list_price
 FROM product.product 
 WHERE model_year = 2020
-	  AND list_price > (
+	  AND list_price > (  --Single row subquery
 						SELECT TOP 1 A.list_price
 						FROM product.product A, product.category B
 						WHERE A.category_id = B.category_id 
@@ -165,7 +165,7 @@ WHERE model_year = 2020
 ORDER BY list_price DESC
 ;
 
---Another Solution
+--Another Solution(Multiple row subquery-(ALL))
 
 select	product_name, model_year, list_price
 from	product.product
@@ -193,7 +193,7 @@ ORDER BY A.list_price
 SELECT product_name, model_year, list_price
 FROM product.product 
 WHERE model_year = 2020
-	  AND list_price > (
+	  AND list_price > (  --Single row subquery
 						SELECT TOP 1 A.list_price
 						FROM product.product A, product.category B
 						WHERE A.category_id = B.category_id 
@@ -203,12 +203,12 @@ WHERE model_year = 2020
 ORDER BY list_price DESC
 ;
 
--- Another Solution
+-- Another Solution(Multiple row subquery-(ANY))
 
 select	product_name, model_year, list_price
 from	product.product
 where	model_year = 2020 and
-		list_price > ANY (
+		list_price > ANY ( 
 			select	B.list_price
 			from	product.category A, product.product B
 			where	A.category_name = 'Receivers Amplifiers' 
@@ -218,6 +218,7 @@ order by 3 DESC
 ;
 
 
+--- CTE's (Common Table Expressions) ---
 
 
 
