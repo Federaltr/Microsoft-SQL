@@ -217,11 +217,219 @@ where	model_year = 2020 and
 order by 3 DESC
 ;
 
+--- 
+
+-- Correlated Subqueries --
+--- EXÝST/NOT EXÝST --- 
+
+-- Apple - Pre-Owned iPad 3 - 32GB - White ürünün hiç sipariþ verilmediði eyaletleri bulunuz.
+-- Eyalet müþterilerin ikamet adreslerinden alýnacaktýr.
+
+-- 'Apple - Pre-Owned iPad 3 - 32GB - White'
+
+SELECT *
+FROM product.product
+WHERE product_name = 'Apple - Pre-Owned iPad 3 - 32GB - White'
+
+SELECT DISTINCT C.state  --ürünü satýn alanlarýn eyaletlerini getirir.
+FROM product.product P, 
+	 sale.order_item I,
+	 sale.orders O,
+	 sale.customer C
+WHERE P.product_name = 'Apple - Pre-Owned iPad 3 - 32GB - White' AND
+      P.product_id = I.product_id AND 
+	  I.order_id = O.order_id AND 
+	  O.customer_id = C.customer_id
+;
+
+SELECT DISTINCT [state]
+FROM sale.customer C2
+WHERE NOT EXISTS (SELECT 1
+   				  FROM product.product P, 
+					   sale.order_item I,
+					   sale.orders O,
+					   sale.customer C
+				  WHERE P.product_name = 'Apple - Pre-Owned iPad 3 - 32GB - White' AND
+					   P.product_id = I.product_id AND 
+					   I.order_id = O.order_id AND 
+					   O.customer_id = C.customer_id AND
+					   C2.[state] = C.[state]
+				)
+;
+
+---
+
+-- Burkes Outlet maðaza stoðunda bulunmayýp,
+-- Davi techno maðazasýnda bulunan ürünlerin stok bilgilerini döndüren bir sorgu yazýn. (edited) 
+
+SELECT PC.product_id, PC.store_id, PC.quantity
+FROM product.stock PC, sale.store SS
+WHERE PC.store_id = SS.store_id AND SS.store_name = 'Davi techno Retail' AND
+	NOT EXISTS ( SELECT DISTINCT A.product_id, A.store_id, A.quantity
+				 FROM product.stock A, sale.store B
+				 WHERE A.store_id = B.store_id AND B.store_name = 'Burkes Outlet' AND
+				       PC.product_id = A.product_id AND A.quantity>0
+	           )
+;
+
+SELECT PC.product_id, PC.store_id, PC.quantity
+FROM product.stock PC, sale.store SS
+WHERE PC.store_id = SS.store_id AND SS.store_name = 'Davi techno Retail' AND
+	 EXISTS ( SELECT DISTINCT A.product_id, A.store_id, A.quantity
+			  FROM product.stock A, sale.store B
+			  WHERE A.store_id = B.store_id AND B.store_name = 'Burkes Outlet' AND
+				    PC.product_id = A.product_id AND A.quantity=0
+	         )
+;
+
+---
+
+-- Burkes Outlet'den alýnýp The BFLO Store'dan hiç alýnmayan ürün var mý?
+-- Varsa bu ürünler nelerdir?
+-- Ürünlerin satýþ bilgileri istenmiyor, sadece ürün listesi isteniyor.
+
+SELECT DISTINCT P.product_name
+FROM product.product P,
+     sale.order_item I,
+     sale.orders O,
+     sale.store S
+WHERE store_name = 'Burkes Outlet'
+    AND P.product_id = I.product_id
+    AND I.order_id = O.order_id
+    AND O.store_id = S.store_id
+    AND NOT EXISTS (SELECT PP.product_name
+                    FROM product.product PP,
+                        sale.order_item SI,
+                        sale.orders SO,
+                        sale.store SS
+                    WHERE store_name = 'The BFLO Store'
+                        AND PP.product_id = SI.product_id
+                        AND SI.order_id = SO.order_id
+                        AND SO.store_id = SS.store_id
+                        AND P.product_name = PP.product_name)
+;
+
+---
 
 --- CTE's (Common Table Expressions) ---
 
+-- Jerald Berray isimli müþterinin son sipariþinden önce sipariþ vermiþ 
+-- ve Austin þehrinde ikamet eden müþterileri listeleyin.
+
+  WITH tbl AS (
+				SELECT max(B.order_date) JeraldLastOrderDate
+				FROM sale.customer A, sale.orders B
+				WHERE A.first_name = 'Jerald' AND A.last_name = 'Berray'
+				  AND A.customer_id = B.customer_id
+			   )
+			   
+SELECT DISTINCT A.first_name, A.last_name
+FROM sale.customer A, 
+	 sale.orders B,
+	 tbl C
+WHERE A.city = 'Austin' 
+  AND A.customer_id = B.customer_id		
+  AND B.order_date < C.JeraldLastOrderDate
+;
+			   
+---
+
+-- Herbir markanýn satýldýðý en son tarihi bir CTE sorgusunda,
+-- Yine herbir markaya ait kaç farklý ürün bulunduðunu da ayrý bir CTE sorgusunda tanýmlayýnýz.
+-- Bu sorgularý kullanarak  Logitech ve Sony markalarýna ait son satýþ tarihini ve toplam ürün sayýsýný (product tablosundaki) ayný sql sorgusunda döndürünüz.
 
 
+WITH tbl AS(
+	SELECT	br.brand_id, br.brand_name, MAX(so.order_date) LastOrderDate
+	FROM	sale.orders so, sale.order_item soi, product.product pr, product.brand br
+	WHERE	so.order_id = soi.order_id and
+			soi.product_id = pr.product_id and
+			pr.brand_id = br.brand_id
+	GROUP BY br.brand_id, br.brand_name
+),
+tbl2 AS(
+	SELECT	pb.brand_id, pb.brand_name, COUNT(*) count_product
+	FROM	product.brand pb, product.product pp
+	WHERE	pb.brand_id = pp.brand_id
+	GROUP BY pb.brand_id, pb.brand_name
+)
+SELECT	*
+FROM	tbl a, tbl2 b
+WHERE	a.brand_id = b.brand_id AND
+		a.brand_name in ('Logitech', 'Sony')
+;
+
+---
+
+-- RECURSÝVE CTE
+
+-- 0'dan 9'a kadar herbir rakam bir satýrda olacak þekide bir tablo oluþturun.
+
+WITH cte AS (
+	     SELECT 0 rakam
+		 UNION ALL
+		 SELECT rakam + 1
+		 FROM cte
+		 WHERE rakam < 9
+		    )
+
+SELECT * FROM cte
+
+---
+
+-- 2020 ocak ayýnýn herbir tarihi bir satýr olacak þekilde 31 satýrlý bir tablo oluþturunuz.
+
+WITH ocak AS (
+		  SELECT CAST('2020-01-01' AS DATE) tarih
+		  UNION ALL
+		  SELECT DATEADD(DAY, 1, tarih)
+		  FROM ocak
+		  WHERE tarih < EOMONTH('2020-01-01')
+		     )
+
+SELECT * FROM ocak
+
+---
+
+-- Write a query that returns all staff with their manager_ids. (use recursive CTE)
+
+SELECT staff_id, first_name, manager_id
+FROM sale.staff
+
+with cte as (
+	select	staff_id, first_name, manager_id
+	from	sale.staff
+	where	staff_id = 1
+	union all
+	select	a.staff_id, a.first_name, a.manager_id
+	from	sale.staff a, cte b
+	where	a.manager_id = b.staff_id
+)
+select *
+from	cte
+;
+
+---
+
+-- 2018 yýlýnda tüm maðazalarýn ortalama cirosunun altýnda ciroya sahip maðazalarý listeleyin.
+-- List the stores their earnings are under the average income in 2018.
+
+WITH T1 AS (
+SELECT	c.store_name, SUM(list_price*quantity*(1-discount)) Store_earn
+FROM	sale.orders A, SALE.order_item B, sale.store C
+WHERE	A.order_id = b.order_id
+AND		A.store_id = C.store_id
+AND		YEAR(A.order_date) = 2018
+GROUP BY C.store_name
+),
+T2 AS (
+SELECT	AVG(Store_earn) Avg_earn
+FROM	T1
+)
+SELECT *
+FROM T1, T2
+WHERE T2.Avg_earn > T1.Store_earn
+;
 
 
 

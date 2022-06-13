@@ -46,13 +46,8 @@ INTO #CountAdv
 FROM CustomerAction
 GROUP BY Adv_Type
 
-SELECT Count_of_Adv
+SELECT *
 FROM #CountAdv
-WHERE Adv_Type = 'A'
-
-SELECT Count_of_Adv
-FROM #CountAdv
-WHERE Adv_Type = 'B'
 
 --
 
@@ -65,25 +60,16 @@ GROUP BY Action, Adv_Type
 SELECT Adv_Type, Count_of_Action
 FROM #CountAction
 
-SELECT Count_of_Action
-FROM #CountAction 
-WHERE Adv_Type = 'A'
 
-SELECT Count_of_Action
-FROM #CountAction 
-WHERE Adv_Type = 'B'
+-- Sonuç
 
---
+SELECT A.Adv_Type, A.Count_of_Adv, B.Count_of_Action
+INTO #Last_table
+FROM #CountAdv A
+JOIN #CountAction B
+ON A.Adv_Type = B.Adv_Type
 
-SELECT Adv_Type, COUNT(Adv_Type) as Conversation_Rate
-FROM CustomerAction
-GROUP BY Adv_Type
+SELECT * FROM #Last_table
 
-SELECT Adv_Type, Count_of_Action
-FROM #CountAction
-
-
-
-
-
-
+SELECT Adv_Type, CAST((Count_of_Action*1.0/Count_of_Adv) AS NUMERIC(10,2)) as Conversion_Rate
+FROM #Last_table
