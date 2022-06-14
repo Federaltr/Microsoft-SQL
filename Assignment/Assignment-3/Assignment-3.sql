@@ -71,5 +71,14 @@ ON A.Adv_Type = B.Adv_Type
 
 SELECT * FROM #Last_table
 
-SELECT Adv_Type, CAST((Count_of_Action*1.0/Count_of_Adv) AS NUMERIC(10,2)) as Conversion_Rate
+SELECT Adv_Type, CAST((Count_of_Action*1.0/Count_of_Adv) AS NUMERIC(3,2)) as Conversion_Rate  --Numeric yerine Decimal'de kullanýlabilir.(Float deðer olmasý ve bölünebilmesi için 1.0 ile çarptýk.)
 FROM #Last_table
+
+
+
+
+
+
+
+
+
