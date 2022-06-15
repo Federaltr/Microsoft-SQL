@@ -75,9 +75,24 @@ SELECT Adv_Type, CAST((Count_of_Action*1.0/Count_of_Adv) AS NUMERIC(3,2)) as Con
 FROM #Last_table
 
 
+-- Another Solution With CTE's
 
-
-
+WITH CTE1 AS
+(
+SELECT adv_type, 
+		COUNT (*) total_action
+FROM	#T1
+GROUP BY adv_type
+), CTE2 AS
+(
+SELECT adv_type, COUNT (*) order_action
+FROM	#T1
+WHERE action = 'Order'
+GROUP BY adv_type
+)
+SELECT	CTE1.adv_type, CTE1.total_action, CTE2.order_action, cast(1.0*order_action/total_action as decimal(3,2)) AS conversion_rate
+FROM	CTE1, CTE2
+WHERE	CTE1.adv_type = CTE2.adv_type
 
 
 
