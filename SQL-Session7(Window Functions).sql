@@ -89,6 +89,7 @@ FROM table1;
 -- Herbir satýrda iþlem yapýlacak olan frame'in büyüklüðünü(satýr sayýsýný) 
 -- tespit edip window frame'in nasýl oluþtuðunu aþaðýdaki sorgu sonucuna göre konuþalým.
 
+--DEFAULT : UNBOUNDED PRECEDING AND CURRENT ROW
 
 SELECT	category_id, product_id,
 		COUNT(*) OVER() NOTHING,
@@ -178,6 +179,83 @@ SELECT DISTINCT A.category_id, A.brand_id,
 	   B.brand_name
 FROM product.product A, product.brand B
 WHERE A.brand_id = B.brand_id 
+
+-- 2nd Session --
+
+-- Write aquery that returns most stocked product in each store
+
+SELECT DISTINCT store_id,
+	   FIRST_VALUE(product_id) OVER(PARTITION BY store_id ORDER BY quantity DESC) most_stocked_prod 
+FROM product.stock
+
+
+-- Write a query that returns customer and their most valuable order with total amount of it.
+--Bu çözüme bak!!!
+SELECT DISTINCT customer_id,
+	   FIRST_VALUE(A.order_id) OVER(PARTITION BY customer_id ORDER BY SUM(B.list_price * B.quantity * (1 - B.discount)) DESC )orders,
+	   FIRST_VALUE(SUM(B.list_price * B.quantity * (1 - B.discount))) OVER(PARTITION BY customer_id ORDER BY SUM(B.list_price * B.quantity * (1 - B.discount))DESC ) orders2
+FROM sale.orders A, sale.order_item B
+WHERE A.order_id = B.order_id 
+
+-- Another Solution
+
+SELECT	customer_id, B.order_id, SUM(quantity * list_price* (1-discount)) net_price
+FROM	sale.order_item A, sale.orders B
+WHERE	A.order_id = B.order_id
+GROUP BY customer_id, B.order_id
+ORDER BY 1,3 DESC;
+WITH T1 AS
+(
+SELECT	customer_id, B.order_id, SUM(quantity * list_price* (1-discount)) net_price
+FROM	sale.order_item A, sale.orders B
+WHERE	A.order_id = B.order_id
+GROUP BY customer_id, B.order_id
+)
+SELECT	DISTINCT customer_id,
+		FIRST_VALUE(order_id) OVER (PARTITION BY customer_id ORDER BY net_price DESC) MV_ORDER,
+		FIRST_VALUE(net_price) OVER (PARTITION BY customer_id ORDER BY net_price DESC) MVORDER_NET_PRICE
+FROM	T1
+
+---
+
+-- Write a query taht returns first order date by month.
+
+SELECT DISTINCT YEAR(order_date) [Year], 
+	   MONTH(order_date) [Month], 
+	   FIRST_VALUE(order_date) OVER (PARTITION BY YEAR(order_date), MONTH(order_date) ORDER BY order_date) first_order_date
+FROM sale.orders
+
+---
+
+-- Write aquery that returns most stocked product in each store
+
+SELECT DISTINCT store_id,
+	   FIRST_VALUE(product_id) OVER(PARTITION BY store_id ORDER BY quantity DESC) most_stocked_prod 
+FROM product.stock
+
+SELECT DISTINCT store_id,
+	  LAST_VALUE(product_id) OVER(PARTITION BY store_id ORDER BY quantity ASC, product_id DESC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING ) most_stocked_prod 
+FROM product.stock
+
+---
+
+--
+
+SELECT order_id, staff_id, first_name, last_name, order_date,
+	   LAG(order_date) OVER(PARTITION BY staff_id ORDER BY order_id) prev_order_date
+FROM sale.orders A, sale.customer B
+WHERE A.customer_id = B.customer_id
+
+SELECT order_id, staff_id, first_name, last_name, order_date,
+	   LEAD(order_date) OVER(PARTITION BY staff_id ORDER BY order_id) next_order_date
+FROM sale.orders A, sale.customer B
+WHERE A.customer_id = B.customer_id
+
+
+
+
+
+
 
 
 
