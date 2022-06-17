@@ -9,16 +9,14 @@ Expected columns are: first name, last name, month and the first order date. (la
 USE SampleRetail
 
 
-SELECT A.first_name, A.last_name, 
-       B.order_date OVER(PARTITION BY MIN(DAY(B.order_date)))
+SELECT A.first_name, A.last_name, MONTH(B.order_date), MIN(B.order_date)
 FROM sale.staff A, sale.orders B
 WHERE A.store_id = B.store_id AND 
 	  YEAR(B.order_date) = 2020 
-ORDER BY A.last_name, MONTH(B.order_date)
+GROUP BY A.first_name, A.last_name, MIN(B.order_date)
+ORDER BY A.last_name, B.order_date
+ 
 
-
-SELECT MONTH(order_date)
-FROM sale.orders
 
 
 /*
@@ -55,6 +53,10 @@ WHERE A.store_id = B.store_id AND
 	  A.order_id = C.order_id AND 
 	  B.store_name = 'Burkes Outlet' AND
 	  A.order_date BETWEEN '2019-04-01' AND '2019-04-30' 
+
+---
+
+
 
 
 
