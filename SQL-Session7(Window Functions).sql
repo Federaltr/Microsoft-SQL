@@ -251,6 +251,171 @@ SELECT order_id, staff_id, first_name, last_name, order_date,
 FROM sale.orders A, sale.customer B
 WHERE A.customer_id = B.customer_id
 
+---
+
+-- 3rd Session --
+
+-- Assign an ordinal number to the product prices for each category in ascending order
+-- 1. Herbir kategori içinde ürünlerin fiyat sýralamasýný yapýnýz (artan fiyata göre 1'den baþlayýp birer birer artacak)
+
+
+SELECT product_id, category_id, list_price,
+	   ROW_NUMBER() OVER(PARTITION BY category_id ORDER BY list_price) [row number]
+FROM product.product
+--ORDER BY 2,3
+
+---
+
+-- Ayný soruyu ayný fiyatlý ürünler ayný sýra numarasýný alacak þekilde yapýnýz (RANK fonksiyonunu kullanýnýz)
+
+SELECT product_id, category_id, list_price,
+	   ROW_NUMBER() OVER(PARTITION BY category_id ORDER BY list_price) [row number],
+	   RANK() OVER(PARTITION BY category_id ORDER BY list_price) [rank],
+	   DENSE_RANK() OVER(PARTITION BY category_id ORDER BY list_price) [dense rank]
+FROM product.product
+
+---
+
+-- 1. Herbir model_year içinde ürünlerin fiyat sýralamasýný yapýnýz (artan fiyata göre 1'den baþlayýp birer birer artacak)
+-- row_number(), rank(), dense_rank()
+
+SELECT product_id, model_year, list_price, 
+	   ROW_NUMBER() OVER(PARTITION BY model_year ORDER BY list_price) [row number],
+	   RANK() OVER(PARTITION BY model_year ORDER BY list_price) [rank],
+	   DENSE_RANK() OVER(PARTITION BY model_year ORDER BY list_price) [dense rank]
+FROM product.product
+
+---
+
+-- Write a query that returns the cumulative distribution of the list price in product table by brand.
+-- Product tablosundaki list price' larýn kümülatif daðýlýmýný marka kýrýlýmýnda hesaplayýnýz
+
+SELECT brand_id, list_price,
+	   ROUND(CUME_DIST() OVER(PARTITION BY brand_id ORDER BY list_price),3) CUM_DIST,
+	   ROUND(PERCENT_RANK() OVER(PARTITION BY brand_id ORDER BY list_price),3) PER_RANK
+	   --NTILE(100) OVER(PARTITION BY brand_id ORDER BY list_price) N_TILE
+FROM product.product 
+
+-- Yukarýdaki sorguda Cum_Dist alanýný CUME_DIST fonk. kullanmadan hesaplayýnýz.
+
+-- CUME_DIST = ROW_NUMBER / TOTAL ROWS
+
+SELECT brand_id, list_price,
+	   COUNT(*) OVER(PARTITION BY brand_id) TotalProdBrand,
+	   ROW_NUMBER() OVER(PARTITION BY brand_id ORDER BY list_price) RowNum,
+	   RANK() OVER(PARTITION BY brand_id ORDER BY list_price) RankNum
+FROM product.product
+
+--- 
+
+WITH tbl AS(
+SELECT brand_id, list_price,
+	   COUNT(*) OVER(PARTITION BY brand_id) TotalProdBrand,
+	   ROW_NUMBER() OVER(PARTITION BY brand_id ORDER BY list_price) RowNum,
+	   RANK() OVER(PARTITION BY brand_id ORDER BY list_price) RankNum
+FROM product.product
+)
+
+SELECT *,
+	   ROUND(CAST(RowNum AS FLOAT) / TotalProdBrand, 3) CumDistRowNum, --gelen deðerleri float deðerlere çevirebilmek için CAST ile FLOAT yaptýk ya da alt satýrda 1.0 ile çarptýk. 
+	   ROUND(1.0 * RankNum / TotalProdBrand, 3) CumDistRankNum         --yoksa sonuçlar 1 ya da 0 olarak dönüyordu. ROUND ile de yuvarladýk. 
+FROM tbl
+
+---
+
+-- Write a query that returns both of the followings:
+-- The average product price of orders.
+-- Average net amount.
+
+
+-- Aþaðýdakilerin her ikisini de döndüren bir sorgu yazýn:
+-- Sipariþlerde yer alan ürünlerin liste fiyatlarýnýn ortalamasý.
+-- Tüm sipariþlerdeki ortalama net tutar.
+
+SELECT order_id, 
+	   AVG(list_price) OVER(PARTITION BY order_id) avg_price,
+	   AVG(list_price * quantity * (1 - discount)) OVER() avg_net_amount
+FROM sale.order_item 
+
+/*
+SELECT order_id, 
+	   AVG(list_price) avg_price
+FROM sale.order_item 
+GROUP BY order_id, list_price
+ORDER BY order_id
+*/
+
+---
+
+--List orders for which the average product price is higher than the average net amount.
+--Ortalama ürün fiyatýnýn ortalama net tutardan yüksek olduðu sipariþleri listeleyin.
+
+WITH tbl AS(
+SELECT DISTINCT order_id, 
+	   AVG(list_price) OVER(PARTITION BY order_id) avg_price,
+	   AVG(list_price * quantity * (1 - discount)) OVER() avg_net_amount
+FROM sale.order_item 
+)
+
+SELECT *
+FROM tbl
+WHERE avg_price > avg_net_amount
+ORDER BY avg_price
+
+---
+
+-- Calculate the stores weekly cumulative number of orders for 2018.
+-- Maðazalarýn 2018 yýlýna ait haftalýk kümülatif sipariþ sayýlarýný hesaplayýnýz.
+
+SELECT DISTINCT A.store_id, A.store_name,--B.order_date
+	   DATEPART(ISO_WEEK, B.order_date) week_of_year,
+	   COUNT(*) OVER(PARTITION BY A.store_id, DATEPART(ISO_WEEK, B.order_date)) weeks_order,
+	   COUNT(*) OVER(PARTITION BY A.store_id ORDER BY DATEPART(ISO_WEEK, B.order_date)) cume_total_order
+FROM sale.store A, sale.orders B
+WHERE A.store_id = B.store_id AND 
+	  YEAR(B.order_date) = 2018
+ORDER BY 1, 3
+
+---
+
+-- Calculate 7-day moving average of the number of products sold between '2018-03-12' and '2018-04-12'.
+-- '2018-03-12' ve '2018-04-12' arasýnda satýlan ürün sayýsýnýn 7 günlük hareketli ortalamasýný hesaplayýn.
+
+
+--Her tarihteki toplam satýlan ürün miktarýný(quantity) bulduk.
+
+SELECT B.order_date, SUM(A.quantity) sum_qauntity -- , A.order_id, A.product_id, A.quantity
+FROM sale.order_item A, sale.orders B
+WHERE A.order_id = B.order_id 
+GROUP BY B.order_date
+ORDER BY 1
+
+-- 
+
+WITH tbl AS(
+SELECT B.order_date, SUM(A.quantity) sum_qauntity -- , A.order_id, A.product_id, A.quantity
+FROM sale.order_item A, sale.orders B
+WHERE A.order_id = B.order_id 
+GROUP BY B.order_date
+)
+
+SELECT *,
+	   AVG(sum_qauntity) OVER(ORDER BY order_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) sales_moving_avg_7
+FROM tbl 
+WHERE order_date BETWEEN '2018-03-12' AND '2018-04-12'
+ORDER BY 1
+
+--hocanýn notlarýndan bu kýsým ile ilgili açýklamayý al!
+
+
+
+
+
+
+
+
+
+
 
 
 
