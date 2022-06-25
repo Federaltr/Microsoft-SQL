@@ -21,7 +21,7 @@ BEGIN
 END
 ;
 
-SELECT dbo.factorial(4)
+SELECT dbo.factorial(4) as Factorial_of_Number
 
 
 
